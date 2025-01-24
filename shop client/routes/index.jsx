@@ -6,6 +6,7 @@ import axios from 'axios'
 import Login from '../pages/login'
 import Product from '../pages/products/id'
 import SearchPage from '../pages/searchPage/searched'
+import Cart from '../pages/cart'
 
 const items = await axios.get('http://localhost:4000/products')
                 .then(res => res.data)
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
             {
                 path:"/search/:searchInput",
                 element:<SearchPage items={items}/>
+            },
+            {
+                path:"/cart",
+                element:<Cart items={items}/>
             }
         ],
     },

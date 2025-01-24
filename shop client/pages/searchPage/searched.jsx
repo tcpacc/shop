@@ -8,24 +8,173 @@ export default function SearchPage({items}){
     const url = new URL(window.location.href)
     const [searchParams, setSearchParams] = useSearchParams();
     const searchTerm = window.location.href.split('/')[4].replaceAll('%20',' ').split('?')[0]
-    const [filteredItems,setFilteredItems] = useState(items.filter(item => item.title.toUpperCase().includes(searchTerm.toUpperCase())))
-
-    if(searchParams.get('min_price')!=null){
-        console.log('hi')
-    }
+    const [filteredItems,setFilteredItems] = useState(searchTerm == "*" ? items : items.filter(item => item.title.toUpperCase().includes(searchTerm.toUpperCase())))
+    const [filteredItemsCopy,setFilteredItemsCopy] = useState(searchTerm == "*" ? items : items.filter(item => item.title.toUpperCase().includes(searchTerm.toUpperCase())))
+    const [filterCheckOrder,setFilterCheckOrder] = useState('')
+    const [onSaleFilteredItems, setOnsaleFilteredItems] = useState(filteredItems.filter(item => item.discount!=undefined))
+    const [customerRatingFilterValue,setCustomerRatingFilterValue] = useState(searchParams.get("customerRatingFilter")||0)
 
     let pricesArray =[]
+    let categoryCountDict = {}
 
-    for (let index = 0; index < filteredItems.length; index++) {
-        if(filteredItems[index].discount != undefined){
-            pricesArray.push(parseInt(Math.floor((filteredItems[index].price*filteredItems[index].discount/100)*100)/100))
+    for (let index = 0; index < filteredItemsCopy.length; index++) {
+        if(filteredItemsCopy[index].discount != undefined){
+            pricesArray.push(parseInt(Math.floor((filteredItemsCopy[index].price*filteredItemsCopy[index].discount/100)*100)/100))
         }
         else{
-            pricesArray.push(parseInt(filteredItems[index].price))
+            pricesArray.push(parseInt(filteredItemsCopy[index].price))
         }
     }
 
+    filteredItemsCopy.forEach(item => {
+        if(categoryCountDict[item.category] >= 1){
+            categoryCountDict[item.category] +=1
+        }else{
+            categoryCountDict[item.category] =1
+        }
+    });
+
     const maxPrice = Math.max(...pricesArray)
+
+    useEffect(()=>{
+        setFilterCheckOrder('checkPrice')
+    },[])
+
+    useEffect(()=>{
+        if(filterCheckOrder=="checkPrice"){
+            if(searchParams.get('min_price')!=null|| searchParams.get('max_price')!=null){
+                const min_price =searchParams.get('min_price')!= null ? searchParams.get('min_price'):0
+                const max_price =searchParams.get('max_price')!=null ? searchParams.get('max_price'):maxPrice
+
+                
+
+                let maxedPrice=false
+                if(max_price==maxPrice){
+                    maxedPrice=true
+                }
+
+                CreateFilterCat('Price',min_price,max_price,maxedPrice)
+
+                setFilteredItems(filteredItems.filter(item =>{
+                    if(maxedPrice){
+                        if(item.discount!=undefined){
+                            if((Math.floor((item.price*item.discount/100)*100)/100) > min_price){
+                                return true
+                            }
+                        }else{
+                            if(item.price > min_price){
+                                return true
+                            }
+                        } 
+                    }else{
+                    if(item.discount!=undefined){
+                        if((Math.floor((item.price*item.discount/100)*100)/100) > min_price && (Math.floor((item.price*item.discount/100)*100)/100) < max_price){
+                            return true
+                        }
+                    }else{
+                        if(item.price > min_price&&item.price < max_price){
+                            return true
+                        }
+                    }}
+                }))
+            }
+            setFilterCheckOrder('checkSpecialOffer')
+        }
+    },[filterCheckOrder])
+
+    useEffect(()=>{
+        if(filterCheckOrder == "checkSpecialOffer"){
+            const specialOfferFilters = searchParams.getAll("specialOfferFilter")
+            let specialOfferItems = []
+            specialOfferFilters.forEach(filter => {
+                if(filter == "OnSale"){
+                    CreateFilterCat("OnSale")
+
+                    specialOfferItems = specialOfferItems.concat(filteredItems.filter(item => item.discount!=undefined))
+                }
+                setFilteredItems(specialOfferItems)
+            });
+            setFilterCheckOrder("checkCategory")
+        }
+    },[filterCheckOrder])
+
+    useEffect(()=>{
+        if(filterCheckOrder == "checkCategory"){
+            const categoryFilters = searchParams.getAll("categoryFilter")
+            let categoryItems = []
+            categoryFilters.forEach(filter => {
+                if(filter == "Jewelery"){
+                    CreateFilterCat("Jewelery")
+
+                    categoryItems = categoryItems.concat(filteredItems.filter(item => item.category == "jewelery"))
+                }
+                if(filter == "Mensclothing"){
+                    CreateFilterCat("Mensclothing")
+
+                    categoryItems = categoryItems.concat(filteredItems.filter(item => item.category == "men's clothing"))
+                }
+                if(filter == "Electronics"){
+                    CreateFilterCat("Electronics")
+
+                    categoryItems = categoryItems.concat(filteredItems.filter(item => item.category == "electronics"))
+                }
+                if(filter == "Womensclothing"){
+                    CreateFilterCat("Womensclothing")
+
+                    categoryItems = categoryItems.concat(filteredItems.filter(item => item.category == "women's clothing"))
+                }
+                setFilteredItems(categoryItems)
+            })
+            setFilterCheckOrder("checkCustomerRating")
+        }
+    },[filterCheckOrder])
+
+    useEffect(()=>{
+        if(filterCheckOrder == "checkCustomerRating"){
+            if(customerRatingFilterValue > 0){
+                StarHoverOut()
+                CreateFilterCat("CustomerRating")
+            }
+        }
+    },[filterCheckOrder])
+
+    function CreateFilterCat(filterName,min_price,max_price,maxedPrice){
+        max_price=max_price||maxPrice
+        min_price=min_price||0
+        maxedPrice = maxedPrice||null
+        document.querySelector(".searchCaterogrySetFiltersDiv").style.display='block'
+
+        const newFilterDiv = document.createElement('div')
+        newFilterDiv.className = `filterCatDiv removeFilterCat${filterName}Div`
+        document.querySelector(".searchCatergoryFiltersBottom").appendChild(newFilterDiv)
+
+        const newFilter = document.createElement('p')
+        newFilter.className = "filterCat"
+
+        if(filterName=='Price'){
+            newFilter.innerHTML = maxedPrice?`$${min_price} - $${max_price}+`:`$${min_price} - $${max_price}`
+        }
+        else if(filterName=='CustomerRating'){
+            const starFilterSelected = document.querySelector(".starFilterFull").cloneNode(true)
+            starFilterSelected.classList.add("starSelectedFilter")
+            starFilterSelected.classList.remove("starFilter")
+            newFilter.innerHTML = customerRatingFilterValue
+            newFilter.appendChild(starFilterSelected)
+            newFilter.innerHTML += " & up"
+        }
+        else{
+            newFilter.innerHTML = filterName
+            document.querySelector('.filterCheckBox'+filterName).checked = true
+        }
+
+        document.querySelector(`.removeFilterCat${filterName}Div`).appendChild(newFilter)
+
+        const removeFilterButton = document.createElement("p")
+        removeFilterButton.className = `removeFilterCat removeFilterCat${filterName}`
+        removeFilterButton.innerHTML = `&times;`
+        document.querySelector(`.removeFilterCat${filterName}Div`).appendChild(removeFilterButton)
+        removeFilterButton.onclick = RemoveFilterCat
+    }
 
     function ShowMore(event){
         const thisClass =document.querySelector(`.${event.currentTarget.className.split(' ')[1]}`)
@@ -39,14 +188,94 @@ export default function SearchPage({items}){
         }
     }
 
+    function RemoveFilterCat(e){
+        document.querySelector(`.${e.target.classList[1]}Div`).remove()
+        if(e.target.classList[1] == "removeFilterCatPrice"){
+            url.searchParams.delete("min_price")
+            url.searchParams.delete("max_price")
+            window.location.href = url.href
+        }
+        else{
+            url.searchParams.delete("customerRatingFilter")
+            url.searchParams.delete("specialOfferFilter",e.target.classList[1].slice(15))
+            url.searchParams.delete("categoryFilter",e.target.classList[1].slice(15))
+            window.location.href = url.href
+        }
+    }
+
+    function ClearAllFitlers(){
+        window.location.href = window.location.href.substring(0,window.location.href.lastIndexOf('?'))
+    }
+
+    function CheckBocCheckChecked(e){
+        if(e.target.checked){
+            if(e.target.parentElement.classList[1]=="searchCategoryContentLeftSpecialOffer"){
+                url.searchParams.append("specialOfferFilter",e.target.classList[1].slice(14))
+                window.location.href = url
+            }
+            else if(e.target.parentElement.classList[1]=="searchCategoryContentLeftCategory"){
+                url.searchParams.append("categoryFilter",e.target.classList[1].slice(14))
+                window.location.href = url
+            }
+        }else{
+            url.searchParams.delete("categoryFilter",e.target.classList[1].slice(14))
+            url.searchParams.delete("specialOfferFilter",e.target.classList[1].slice(14))
+            window.location.href = url
+        }}
+
+    function StarHover(e){
+        console.log(e)
+        const element = e.target.parentElement.classList[1].slice(35)
+        for (let index = 1; index <= 5; index++) {
+            if(index<=element){
+                document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.replace("searchCategoryContentTypeStarRatingBlankStar","searchCategoryContentTypeStarRatingFullStar")
+            }else{
+                document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.replace("searchCategoryContentTypeStarRatingFullStar","searchCategoryContentTypeStarRatingBlankStar")
+            }
+            
+            
+        }
+    }
+
+    function StarHoverOut(){
+        for (let index = 1; index <= 5; index++) {
+            if(index <= customerRatingFilterValue){
+                document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.remove("searchCategoryContentTypeStarRatingBlankStar")
+            document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.add("searchCategoryContentTypeStarRatingFullStar")
+            }else{
+            document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.remove("searchCategoryContentTypeStarRatingFullStar")
+            document.querySelector(`.searchCategoryContentTypeStarRating${index}`).classList.add("searchCategoryContentTypeStarRatingBlankStar")}
+            
+        }
+    }
+
+    function StarClick(e){
+        const value = e.target.parentElement.parentElement.parentElement.classList[1].slice(35)
+        url.searchParams.set("customerRatingFilter",value)
+        window.location.href = url
+    }
+
     return(
         <>
-            <div className="searchContainer">
-                <div className="searchFilters">
+        <div className="superCategory">
+        <div className="searchFilters">
+                    {/* selected fitlers */}
+                    <div className="searchCaterogrySetFiltersDiv">
+                        <div className="searchCategory searchCategorySetFiltersTop">
+                            <h2 className="searchFilter">Selected Filters</h2>
+                            <a href="#" className="clearAllSearchCategory" onClick={ClearAllFitlers}>clear all</a>
+                        </div>
+                        <div className="searchCatergoryFiltersBottom">
+
+                        </div>
+                        <hr className="searchFilterSeparator"/>
+                    </div>
+                    {/* category price fitler */}
                     <div className="searchCategory searchCategoryPrice" onClick={ShowMore}>
                         <h2 className="searchFilter">Price</h2>
                         <svg fill="#000000" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="arrowSearchSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg>
                     </div>
+                    {/* content of price fitler */}
                     <div className="searchCategoryContent">
                         <MultiRangeSlider
                         min={0}
@@ -55,11 +284,75 @@ export default function SearchPage({items}){
                         />
                     </div>
                     <hr className="searchFilterSeparator"/>
+                    {/* category special offers filter*/}
                     <div className="searchCategory searchCategorySpecialOffer" onClick={ShowMore} >
                         <h2 className="searchFilter">Special Offer</h2>
                         <svg fill="#000000" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="arrowSearchSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg>
                     </div>
+                    {/* content of special offers filter*/}
+                    <div className="searchCategoryContent">
+                        <div className="searchCategoryContentTypeCheckbox">
+                            <div className="searchCategoryContentLeft searchCategoryContentLeftSpecialOffer">
+                                <input type="checkbox" id="onSale" className="filterCheckBox filterCheckBoxOnSale" onChange={CheckBocCheckChecked}/>
+                                <label htmlFor="onSale" className="filterCheckBoxLabel">On Sale</label>
+                            </div>
+                            <p className="searchCategoryContentAmount">{onSaleFilteredItems.length}</p>
+                        </div>
+                    </div>
+                    <hr className="searchFilterSeparator"/>
+                    {/* category filter */}
+                    <div className="searchCategory searchCategoryCategory" onClick={ShowMore} >
+                        <h2 className="searchFilter">Category</h2>
+                        <svg fill="#000000" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="arrowSearchSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg>
+                    </div>
+                    <div className="searchCategoryContent">
+                        {Object.keys(categoryCountDict).map((key,index) => (
+                            <>
+                            <div className="searchCategoryContentTypeCheckbox">
+                                <div className="searchCategoryContentLeft searchCategoryContentLeftCategory">
+                                    <input type="checkbox" id={key} className={"filterCheckBox filterCheckBox"+key.charAt(0).toUpperCase() + key.replace(" ","").replace("'","").slice(1)} onChange={CheckBocCheckChecked}/>
+                                    <label htmlFor={key} className="filterCheckBoxLabel">{key}</label>
+                                </div>
+                                <p className="searchCategoryContentAmount">{categoryCountDict[key]}</p>
+                            </div>
+                            </>
+                        ))
+                    }
+                    </div>
+                <hr className="searchFilterSeparator"/>
+                {/* customer rating filter */}
+                <div className="searchCategory searchCategoryCustomerRating" onClick={ShowMore} >
+                    <h2 className="searchFilter">Customer Rating</h2>
+                    <svg fill="#000000" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="arrowSearchSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg>
                 </div>
+                <div className="searchCategoryContent">
+                <div className="searchCategoryCustomerRating" onClick={StarClick}>
+                    <div className="searchCategoryContentTypeStarRating searchCategoryContentTypeStarRating1 searchCategoryContentTypeStarRatingBlankStar" onMouseEnter={StarHover} onMouseLeave={StarHoverOut}>
+                        <svg fill="#ffc800" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 278.457 278.457" xml:space="preserve" stroke="#ffc800" className="starFilter starFilterBlank" ><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M277.478,106.28c-2.353-7.24-8.611-12.517-16.146-13.611l-71.979-10.46l-32.19-65.224 c-3.369-6.826-10.321-11.148-17.935-11.148s-14.565,4.322-17.935,11.148l-32.19,65.224l-71.979,10.46 C9.591,93.763,3.332,99.039,0.979,106.28s-0.391,15.188,5.062,20.502l52.084,50.77L45.83,249.24 c-1.287,7.503,1.797,15.087,7.956,19.562c6.16,4.474,14.324,5.065,21.063,1.522l64.38-33.847l64.38,33.847 c2.926,1.538,6.121,2.297,9.305,2.297c4.146,0,8.273-1.288,11.758-3.819c6.159-4.475,9.243-12.059,7.956-19.562l-12.295-71.688 l52.084-50.77C277.868,121.468,279.83,113.52,277.478,106.28z M184.883,156.247c-4.714,4.594-6.865,11.214-5.752,17.702l7.222,42.11 l-37.817-19.882c-2.913-1.531-6.109-2.297-9.307-2.297s-6.394,0.766-9.307,2.297L92.104,216.06l7.222-42.11 c1.113-6.488-1.038-13.108-5.752-17.702l-30.595-29.822l42.281-6.145c6.515-0.946,12.146-5.038,15.059-10.94l18.909-38.313 l18.909,38.313c2.913,5.902,8.544,9.994,15.059,10.94l42.281,6.145L184.883,156.247z"></path> </g></svg>
+                        <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 47.94 47.94" xml:space="preserve" fill="#ffc800" stroke="#ffc800" className="starFilter starFilterFull"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path style={{fill:"#ffc819"}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757 c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042 c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685 c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528 c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956 C22.602,0.567,25.338,0.567,26.285,2.486z"></path> </g></svg>
+                    </div>
+                    <div className="searchCategoryContentTypeStarRating searchCategoryContentTypeStarRating2 searchCategoryContentTypeStarRatingBlankStar" onMouseEnter={StarHover} onMouseLeave={StarHoverOut}>
+                        <svg fill="#ffc800" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 278.457 278.457" xml:space="preserve" stroke="#ffc800" className="starFilter starFilterBlank"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M277.478,106.28c-2.353-7.24-8.611-12.517-16.146-13.611l-71.979-10.46l-32.19-65.224 c-3.369-6.826-10.321-11.148-17.935-11.148s-14.565,4.322-17.935,11.148l-32.19,65.224l-71.979,10.46 C9.591,93.763,3.332,99.039,0.979,106.28s-0.391,15.188,5.062,20.502l52.084,50.77L45.83,249.24 c-1.287,7.503,1.797,15.087,7.956,19.562c6.16,4.474,14.324,5.065,21.063,1.522l64.38-33.847l64.38,33.847 c2.926,1.538,6.121,2.297,9.305,2.297c4.146,0,8.273-1.288,11.758-3.819c6.159-4.475,9.243-12.059,7.956-19.562l-12.295-71.688 l52.084-50.77C277.868,121.468,279.83,113.52,277.478,106.28z M184.883,156.247c-4.714,4.594-6.865,11.214-5.752,17.702l7.222,42.11 l-37.817-19.882c-2.913-1.531-6.109-2.297-9.307-2.297s-6.394,0.766-9.307,2.297L92.104,216.06l7.222-42.11 c1.113-6.488-1.038-13.108-5.752-17.702l-30.595-29.822l42.281-6.145c6.515-0.946,12.146-5.038,15.059-10.94l18.909-38.313 l18.909,38.313c2.913,5.902,8.544,9.994,15.059,10.94l42.281,6.145L184.883,156.247z"></path> </g></svg>
+                        <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 47.94 47.94" xml:space="preserve" fill="#ffc800" stroke="#ffc800" className="starFilter starFilterFull"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path style={{fill:"#ffc819"}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757 c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042 c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685 c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528 c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956 C22.602,0.567,25.338,0.567,26.285,2.486z"></path> </g></svg>
+                    </div>
+                    <div className="searchCategoryContentTypeStarRating searchCategoryContentTypeStarRating3 searchCategoryContentTypeStarRatingBlankStar" onMouseEnter={StarHover} onMouseLeave={StarHoverOut}>
+                        <svg fill="#ffc800" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 278.457 278.457" xml:space="preserve" stroke="#ffc800" className="starFilter starFilterBlank"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M277.478,106.28c-2.353-7.24-8.611-12.517-16.146-13.611l-71.979-10.46l-32.19-65.224 c-3.369-6.826-10.321-11.148-17.935-11.148s-14.565,4.322-17.935,11.148l-32.19,65.224l-71.979,10.46 C9.591,93.763,3.332,99.039,0.979,106.28s-0.391,15.188,5.062,20.502l52.084,50.77L45.83,249.24 c-1.287,7.503,1.797,15.087,7.956,19.562c6.16,4.474,14.324,5.065,21.063,1.522l64.38-33.847l64.38,33.847 c2.926,1.538,6.121,2.297,9.305,2.297c4.146,0,8.273-1.288,11.758-3.819c6.159-4.475,9.243-12.059,7.956-19.562l-12.295-71.688 l52.084-50.77C277.868,121.468,279.83,113.52,277.478,106.28z M184.883,156.247c-4.714,4.594-6.865,11.214-5.752,17.702l7.222,42.11 l-37.817-19.882c-2.913-1.531-6.109-2.297-9.307-2.297s-6.394,0.766-9.307,2.297L92.104,216.06l7.222-42.11 c1.113-6.488-1.038-13.108-5.752-17.702l-30.595-29.822l42.281-6.145c6.515-0.946,12.146-5.038,15.059-10.94l18.909-38.313 l18.909,38.313c2.913,5.902,8.544,9.994,15.059,10.94l42.281,6.145L184.883,156.247z"></path> </g></svg>
+                        <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 47.94 47.94" xml:space="preserve" fill="#ffc800" stroke="#ffc800" className="starFilter starFilterFull"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path style={{fill:"#ffc819"}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757 c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042 c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685 c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528 c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956 C22.602,0.567,25.338,0.567,26.285,2.486z"></path> </g></svg>
+                    </div>
+                    <div className="searchCategoryContentTypeStarRating searchCategoryContentTypeStarRating4 searchCategoryContentTypeStarRatingBlankStar" onMouseEnter={StarHover} onMouseLeave={StarHoverOut}>
+                        <svg fill="#ffc800" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 278.457 278.457" xml:space="preserve" stroke="#ffc800" className="starFilter starFilterBlank"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M277.478,106.28c-2.353-7.24-8.611-12.517-16.146-13.611l-71.979-10.46l-32.19-65.224 c-3.369-6.826-10.321-11.148-17.935-11.148s-14.565,4.322-17.935,11.148l-32.19,65.224l-71.979,10.46 C9.591,93.763,3.332,99.039,0.979,106.28s-0.391,15.188,5.062,20.502l52.084,50.77L45.83,249.24 c-1.287,7.503,1.797,15.087,7.956,19.562c6.16,4.474,14.324,5.065,21.063,1.522l64.38-33.847l64.38,33.847 c2.926,1.538,6.121,2.297,9.305,2.297c4.146,0,8.273-1.288,11.758-3.819c6.159-4.475,9.243-12.059,7.956-19.562l-12.295-71.688 l52.084-50.77C277.868,121.468,279.83,113.52,277.478,106.28z M184.883,156.247c-4.714,4.594-6.865,11.214-5.752,17.702l7.222,42.11 l-37.817-19.882c-2.913-1.531-6.109-2.297-9.307-2.297s-6.394,0.766-9.307,2.297L92.104,216.06l7.222-42.11 c1.113-6.488-1.038-13.108-5.752-17.702l-30.595-29.822l42.281-6.145c6.515-0.946,12.146-5.038,15.059-10.94l18.909-38.313 l18.909,38.313c2.913,5.902,8.544,9.994,15.059,10.94l42.281,6.145L184.883,156.247z"></path> </g></svg>
+                        <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 47.94 47.94" xml:space="preserve" fill="#ffc800" stroke="#ffc800" className="starFilter starFilterFull"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path style={{fill:"#ffc819"}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757 c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042 c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685 c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528 c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956 C22.602,0.567,25.338,0.567,26.285,2.486z"></path> </g></svg>
+                    </div>
+                    <div className="searchCategoryContentTypeStarRating searchCategoryContentTypeStarRating5 searchCategoryContentTypeStarRatingBlankStar" onMouseEnter={StarHover} onMouseLeave={StarHoverOut}>
+                        <svg fill="#ffc800" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 278.457 278.457" xml:space="preserve" stroke="#ffc800" className="starFilter starFilterBlank"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M277.478,106.28c-2.353-7.24-8.611-12.517-16.146-13.611l-71.979-10.46l-32.19-65.224 c-3.369-6.826-10.321-11.148-17.935-11.148s-14.565,4.322-17.935,11.148l-32.19,65.224l-71.979,10.46 C9.591,93.763,3.332,99.039,0.979,106.28s-0.391,15.188,5.062,20.502l52.084,50.77L45.83,249.24 c-1.287,7.503,1.797,15.087,7.956,19.562c6.16,4.474,14.324,5.065,21.063,1.522l64.38-33.847l64.38,33.847 c2.926,1.538,6.121,2.297,9.305,2.297c4.146,0,8.273-1.288,11.758-3.819c6.159-4.475,9.243-12.059,7.956-19.562l-12.295-71.688 l52.084-50.77C277.868,121.468,279.83,113.52,277.478,106.28z M184.883,156.247c-4.714,4.594-6.865,11.214-5.752,17.702l7.222,42.11 l-37.817-19.882c-2.913-1.531-6.109-2.297-9.307-2.297s-6.394,0.766-9.307,2.297L92.104,216.06l7.222-42.11 c1.113-6.488-1.038-13.108-5.752-17.702l-30.595-29.822l42.281-6.145c6.515-0.946,12.146-5.038,15.059-10.94l18.909-38.313 l18.909,38.313c2.913,5.902,8.544,9.994,15.059,10.94l42.281,6.145L184.883,156.247z"></path> </g></svg>
+                        <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 47.94 47.94" xml:space="preserve" fill="#ffc800" stroke="#ffc800" className="starFilter starFilterFull"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path style={{fill:"#ffc819"}} d="M26.285,2.486l5.407,10.956c0.376,0.762,1.103,1.29,1.944,1.412l12.091,1.757 c2.118,0.308,2.963,2.91,1.431,4.403l-8.749,8.528c-0.608,0.593-0.886,1.448-0.742,2.285l2.065,12.042 c0.362,2.109-1.852,3.717-3.746,2.722l-10.814-5.685c-0.752-0.395-1.651-0.395-2.403,0l-10.814,5.685 c-1.894,0.996-4.108-0.613-3.746-2.722l2.065-12.042c0.144-0.837-0.134-1.692-0.742-2.285l-8.749-8.528 c-1.532-1.494-0.687-4.096,1.431-4.403l12.091-1.757c0.841-0.122,1.568-0.65,1.944-1.412l5.407-10.956 C22.602,0.567,25.338,0.567,26.285,2.486z"></path> </g></svg>
+                    </div>
+                </div>
+                </div>
+                </div>
+            <div className="searchContainer">
+                
+                {/* search content of page */}
                 {filteredItems.length<=0
                 ?(
                     <>
@@ -106,6 +399,7 @@ export default function SearchPage({items}){
                 )))}
                 </div>}
             </div>
+        </div>
             <div className="popupError">
                 <p>You must be logged in to do this action</p>
                 <p className="closePopupError" onClick={()=>ClosePopupError()}>x</p>

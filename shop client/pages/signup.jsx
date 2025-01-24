@@ -61,6 +61,11 @@ export default function Signup(){
         
 
         if (submitted){
+            var now = new Date();
+            var time = now.getTime();
+            var expireTime = time + 30000*86400;
+            now.setTime(expireTime);
+            document.cookie = `userEmail=${input.email};expires=${now.toUTCString()}; path=/`
             const res = await axios.get(`http://localhost:4000/users/email/${input.email}`)
             if(res.data==null){
                 await axios.post('http://localhost:4000/users',{

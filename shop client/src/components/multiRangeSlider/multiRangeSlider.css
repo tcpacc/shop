@@ -2,6 +2,35 @@
   text-align: center;
 }
 
+.priceInputChange{
+  border: none;
+  /* width: auto; */
+  font-weight: bold;
+  font-size: 1em;
+  width: 10px;
+  -moz-appearance: textfield;
+  margin: 0;
+}
+
+.priceInputChange::-webkit-inner-spin-button,.priceMinInput::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+}
+
+.priceInputChange::-webkit-inner-spin-button,.priceMinInput::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+}
+
+.priceOutOfRangeError{
+  text-align: center;
+  margin-top: 10px;
+  color: rgb(255, 67, 67);
+  display: none;
+}
+
+.priceInputChange:focus{
+  border: 1px solid grey;
+}
+
 .containerRangeSlider {
     margin-bottom: 10px;
     height: 50px;

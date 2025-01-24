@@ -6,62 +6,13 @@ import { Link } from "react-router-dom";
 // import { accountinf, su } from "./signup";
 // import axios from "axios";
 // import swal from'sweetalert'
-import { ClosePopupError, PostToCart, PostToList } from "../src/App";
+import { ClosePopupError, PostToCart, PostToList, RedirectToCategory } from "../src/App";
 
 export default function Home({items}){
     let categoryCount = {}
     const [includedCategories,setIncludedCategories] =useState([])
     let categorykeys=[]
     const [categoryKeysReal,setCategoryKeysReal]= useState({})
-
-    // async function PostToCart(productId,productName){
-    //     if(su==false&&lgi==false){
-    //         DisplayError()
-    //     }
-    //     else{
-    //         swal("Added to Cart!", `${productName} has been added to your cart`, "success");
-    //         if(su){
-    //             const getuser = await axios.get(`http://localhost:4000/users/id/${accountinf.data._id}`)
-    //             if(productId in getuser.data.cart){
-    //                 let cartArr = getuser.data.cart
-    //                 cartArr[productId]+=1
-    //                 axios.patch(`http://localhost:4000/users/addtocart/${accountinf.data._id}`,{
-    //                     cart:cartArr
-    //                 })
-    //             }
-    //             else{
-    //                 let cartArr = {}
-    //                 cartArr[productId] = 1
-    //                 for(const [key,value] of Object.entries(getuser.data.cart)){
-    //                     cartArr[key] = value
-    //                 }
-    //                 axios.patch(`http://localhost:4000/users/addtocart/${accountinf.data._id}`,{
-    //                     cart:cartArr
-    //                 })
-    //             }
-    //         }
-    //         else if(lgi){
-    //             const getuser = await axios.get(`http://localhost:4000/users/id/${infouser.data._id}`)
-    //             if(productId in getuser.data.cart){
-    //                 let cartArr = getuser.data.cart
-    //                 cartArr[productId]+=1
-    //                 axios.patch(`http://localhost:4000/users/addtocart/${infouser.data._id}`,{
-    //                     cart:cartArr
-    //                 })
-    //             }
-    //             else{
-    //                 let cartArr = {}
-    //                 cartArr[productId] = 1
-    //                 for(const [key,value] of Object.entries(getuser.data.cart)){
-    //                     cartArr[key] = value
-    //                 }
-    //                 axios.patch(`http://localhost:4000/users/addtocart/${infouser.data._id}`,{
-    //                     cart:cartArr
-    //                 })
-    //             }
-    //         }
-    //     }
-    // }
 
     useEffect(()=>{
         items.forEach(item => {
@@ -96,6 +47,9 @@ export default function Home({items}){
                 autoplaySpeed:2000,
             })});
     },[])
+
+    
+
     return (
         <>
         <div className="contentOne">
@@ -156,13 +110,13 @@ export default function Home({items}){
                     <h1 className="title">-By Categories-</h1>
                     <div className="productcategoriesgrid">
                         {includedCategories.map((item,key)=>(
-                            <div className="categorycard" key={key} >
+                            <button className="categorycard" key={key}  onClick={()=>{RedirectToCategory(item.category)}}>
                                 <img src={item.image} alt="" className="categoryproductimage"/>
                                 <div className="categoryIdentity">
                                     <h3>{item.category}</h3>
                                     <h5>{Math.ceil(categoryKeysReal[item.category]/2)} products</h5>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>

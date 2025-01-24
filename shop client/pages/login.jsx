@@ -18,7 +18,6 @@ export default function Login(){
         var time = now.getTime();
         var expireTime = time + 30000*86400;
         now.setTime(expireTime);
-        document.cookie = `userEmail=${input.email};expires=${now.toUTCString()}; path=/`
         const check = await axios.get(`http://localhost:4000/users/email/${input.email}`)
         if(check.data==null){
             document.querySelector(".non-existing-email").style.setProperty("--show","block")
@@ -26,6 +25,7 @@ export default function Login(){
         }
         else{
             if(check.data.password==input.password){
+                document.cookie = `userEmail=${input.email};expires=${now.toUTCString()}; path=/`
                 lgi=true
                 infouser = check
                 navigate("/")

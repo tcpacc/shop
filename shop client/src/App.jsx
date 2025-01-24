@@ -10,9 +10,8 @@ import axios from "axios";
 import swal from'sweetalert'
 import { infouser, lgi } from '../pages/login'
 import { accountinf, su } from '../pages/signup'
+import Swal from 'sweetalert2'
 
-
-export let token = "rgnjei"
 export let loggedIn;
 export let loggedInInfo;
 
@@ -74,10 +73,14 @@ export async function PostToList(productId,productName){
     }
     const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
     if(getuser.data.list.includes(productId)){
-      swal("Failed to Add to List",`${productName} already in list`,"warning")
+      Swal.fire( {icon: "error",
+                  title: "Failed to Add to List",
+                  text: `${productName} already in list`});
     }
     else{
-      swal("Added to List!", `${productName} has been added to your list`, "success");
+      Swal.fire( {icon: "success",
+                  title: "Added to List!",
+                  text: `${productName} has been added to your list`});
       let listArr= getuser.data.list
       listArr.push(productId)
       axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
@@ -87,12 +90,16 @@ export async function PostToList(productId,productName){
   }
 }
 
-export async function PostToCart(productId,productName){
+export async function PostToCart(productId,productName,quantity){
+  quantity = parseInt(quantity) ||1
   if(su==false&&lgi==false&&loggedIn==false){
       DisplayError()
   }
   else{
-      swal("Added to Cart!", `${productName} has been added to your cart`, "success");
+      Swal.fire( {icon: "success",
+            title: "Added to Cart!", 
+            test: `${productName} has been added to your cart`,
+            footer:"<a href='/cart'>Go to Cart</a>"});
       let accountInfoUser;
       if(su){
         accountInfoUser = accountinf
@@ -106,14 +113,14 @@ export async function PostToCart(productId,productName){
       const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
       if(productId in getuser.data.cart){
           let cartArr = getuser.data.cart
-          cartArr[productId]+=1
+          cartArr[productId]+=quantity
           axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
               cart:cartArr
           })
       }
       else{
           let cartArr = {}
-          cartArr[productId] = 1
+          cartArr[productId] = quantity
           for(const [key,value] of Object.entries(getuser.data.cart)){
               cartArr[key] = value
           }
@@ -122,6 +129,10 @@ export async function PostToCart(productId,productName){
           })
       }
   }
+}
+
+export function RedirectToCategory(categoryName){
+  window.location.href = `${window.location.href}search/*?categoryFilter=${categoryName[0].toUpperCase() + categoryName.slice(1).replace(" ","").replace("'","")}`
 }
 
 function App() {

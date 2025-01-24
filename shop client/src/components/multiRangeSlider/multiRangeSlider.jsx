@@ -12,6 +12,58 @@ const MultiRangeSlider = ({ min, max, onChange }) => {
   const maxValRef = useRef(maxVal);
   const range = useRef(null);
 
+  useEffect(()=>{
+    document.querySelector('.priceMinInput').value =minVal
+    document.querySelector('.priceMinInput').style.width = document.querySelector('.priceMinInput').value.length*10 + "px"
+
+    document.querySelector('.priceMaxInput').value =maxVal
+    document.querySelector('.priceMaxInput').style.width = document.querySelector('.priceMaxInput').value.length*10 + "px"
+  },[])
+
+  function ChangeWidth(e){
+    if(e.target.value[0]==0){
+      let splitCount = 0
+      for (let index = 0; index < e.target.value.length; index++) {
+        if(e.target.value[index]==0){
+          splitCount++
+        }else{
+          e.target.value = e.target.value.slice(splitCount)
+          break
+        }
+      }
+    }
+    if(e.target.classList[0] == "priceMinInput"){
+        document.querySelector(`.${e.target.classList[0]}`).style.width = e.target.value.length*10 + "px"}
+  }
+
+  function CheckIfHandlePriceRangeChange(e){
+    if(e.key=="Enter"){
+      HandlePriceRangeChange(e)
+    }
+  }
+
+  function HandlePriceRangeChange(e){
+    if(e.target.classList[0] =="priceMaxInput"){
+      if(e.target.value <= minVal || e.target.value <0||e.target.value >max){
+        e.target.value=maxVal
+        document.querySelector(".priceOutOfRangeError").style.display ="block"
+      }
+      else{
+        url.searchParams.set('max_price',document.querySelector('.priceMaxInput').value)
+        window.location.href = url
+      }
+    }else{
+      if(e.target.value >=maxVal || e.target.value <0){
+        e.target.value=minVal
+        document.querySelector(".priceOutOfRangeError").style.display ="block"
+      }
+      else{
+        url.searchParams.set('min_price',document.querySelector('.priceMinInput').value)
+        window.location.href = url
+      }
+    }
+  }
+
   function SetPriceFilter(e){
     const check = e.target.classList[1]
     if(check == "thumb--right"){
@@ -53,16 +105,21 @@ const MultiRangeSlider = ({ min, max, onChange }) => {
 
   // Get min and max values when their state changes
   useEffect(() => {
-    onChange({ min: minVal, max: maxVal });
+    document.querySelector('.priceMinInput').value= minVal 
+    document.querySelector('.priceMinInput').style.width = document.querySelector('.priceMinInput').value.length*10 + "px"
+
+    document.querySelector('.priceMaxInput').value= maxVal 
+    document.querySelector('.priceMaxInput').style.width = document.querySelector('.priceMaxInput').value.length*10 + "px"
   }, [minVal, maxVal, onChange]);
 
   return (
     <>
     {maxVal ==max ?
-    <h4 className="priceRangeShow">${minVal} - ${maxVal}+</h4>
+    <h4 className="priceRangeShow">$<input type="number" className="priceMinInput priceInputChange" onChange={ChangeWidth} onBlur={HandlePriceRangeChange} onKeyDown={CheckIfHandlePriceRangeChange}></input> - $<input type="number" className="priceMaxInput priceInputChange" onChange={ChangeWidth} onBlur={HandlePriceRangeChange} onKeyDown={CheckIfHandlePriceRangeChange}></input>+</h4>
     :
-    <h4 className="priceRangeShow">${minVal} - ${maxVal}</h4>
+    <h4 className="priceRangeShow">$<input type="number" className="priceMinInput priceInputChange" onChange={ChangeWidth} onBlur={HandlePriceRangeChange} onKeyDown={CheckIfHandlePriceRangeChange}></input> - $<input type="number" className="priceMaxInput priceInputChange" onChange={ChangeWidth} onBlur={HandlePriceRangeChange} onKeyDown={CheckIfHandlePriceRangeChange}></input></h4>
     }
+    <h5 className="priceOutOfRangeError">*Input out of range</h5>
     <div className="containerRangeSlider">
       <input
         type="range"
