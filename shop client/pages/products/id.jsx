@@ -1,14 +1,37 @@
 import axios from "axios"
 import React, { useEffect, useState } from "react"
-import { ClosePopupError, PostToCart, PostToList } from "../../src/App"
+import {AddOrRemoveToGift, ClosePopupError, loggedIn, loggedInInfo, PostToCart, PostToList, RedirectToCategory } from "../../src/App"
 import "slick-carousel"
 import"jquery"
+import { accountinf, su } from "../signup"
+import { infouser, lgi } from "../login"
 
 const Product = function (items){
     const product = items.items.filter(item => item._id==window.location.href.split('/')[4])
     const rating = product[0].rating.rate
     const [quantity,setQuantity] = useState(1)
     const [zoomMode,setZoomMode] = useState(false)
+    let downFlag = false
+    let pageXStart = undefined
+    let pageYStart = undefined
+    const [selectedColor,setSelectedColor] = useState(product[0].color||null)
+    const [userInfo,setUserInfo] = useState()
+
+    useEffect(()=>{
+        if(su){
+            setUserInfo(accountinf)
+        }
+        else if(lgi){
+            setUserInfo(infouser)
+        }
+        else if(loggedIn){
+                if(loggedInInfo !=undefined&& loggedInInfo!=null){
+                setUserInfo(loggedInInfo)}
+        }
+        else{
+
+        }
+    })
 
     useEffect(()=>{
         if(zoomMode){
@@ -41,6 +64,12 @@ const Product = function (items){
                 slidesToScroll: 1,
             })});
     },[])
+
+    useEffect(()=>{
+        if(userInfo!= undefined && userInfo.data.gift.includes(product[0]._id)){
+            document.querySelector(".checkBoxGift").checked = true
+        }
+    })
 
     function SelectDeliveryMethod(classname){
         var divs = document.querySelectorAll('.deliverybutton');
@@ -139,6 +168,8 @@ const Product = function (items){
     }
 
     function ExpandModeFull(){
+        if(window.scrollY == 0){
+        window.scrollTo(0,1)}
         ExpandModeEngage()
         ExpendModeEngageSelect()
     }
@@ -151,6 +182,8 @@ const Product = function (items){
             const activeElement = document.querySelector(".slick-current").childNodes[0].getAttribute("id").split(" ")[1]
             document.querySelector(`.${activeElement}`).classList.add("expandedImageImageActive")
             document.querySelector(`.${activeElement}`).classList.remove("expandedImageImageInactive")
+        }else{
+            document.querySelector(".expandedImageImage").classList.add("expandedImageImageActive")
         }
     }
 
@@ -183,7 +216,6 @@ const Product = function (items){
         });
         prevImage.classList.add("expandedImageImageActive")
         prevImage.classList.remove("expandedImageImageInactive")
-        console.log(activeImage,prevImage)
     }
 
     function ButtonRightClick(){
@@ -216,15 +248,69 @@ const Product = function (items){
     }
 
     function MouseMove(e){
-        if(e.target.parentElement.classList.value.includes("expandedImageImageExpanded")){
-        if(e.pageY < screen.height/2){
-            e.target.parentElement.style.paddingTop = e.pageY+"px"
-            e.target.parentElement.style.paddingBottom = "550px"
-        }else{
-            e.target.parentElement.style.paddingTop = e.pageY+"px"
-            e.target.parentElement.style.paddingBottom = "335px"
-        }
+        if(downFlag){
+            const unit = 470/document.querySelector(".expandedImageImageActive").getBoundingClientRect().height
+            const pageMoveY= pageYStart-e.pageY
+
+            if(e.target.parentElement.classList.value.includes("expandedImageImageExpanded")){
+                if(pageMoveY>30||pageMoveY<30){
+                if(pageMoveY >= 0){
+                    pageYStart=e.pageY
+                    e.target.parentElement.style.top =-parseFloat(getComputedStyle(e.target.parentElement).top)+unit*10<465?`-${-parseFloat(getComputedStyle(e.target.parentElement).top)+unit*13}px`:"-470px"
+                }else if(pageMoveY<0){
+                    pageYStart=e.pageY
+                    e.target.parentElement.style.top =parseFloat(getComputedStyle(e.target.parentElement).top)+unit * 10<-5?`${parseFloat(getComputedStyle(e.target.parentElement).top)+unit * 13}px`:"0px"
+                }}}
+        
     }
+    }
+
+    function ExpandMouseDown(e){
+        downFlag = true
+        pageXStart = e.pageX
+        pageYStart = e.pageY
+        document.querySelector(".expandedImageImageExpanded").style.cursor = "grabbing"
+    }
+
+    function ExpandMouseUp(e){
+        downFlag = false
+        document.querySelector(".expandedImageImageExpanded").style.cursor = "grab"
+    }
+
+    function MouseEnterColorStyle(e,color){
+        e.target.classList.add("colorSelectImageSelected")
+        document.querySelector(".colorSelectImageSelectedTempOff").classList.remove("colorSelectImageSelected")
+
+        setSelectedColor(color)
+    }
+
+    function MouseOutColorStyle(e){
+        e.target.classList.remove("colorSelectImageSelected")
+        document.querySelector(".colorSelectImageSelectedTempOff").classList.add("colorSelectImageSelected")
+
+        setSelectedColor(product[0].color)
+    }
+    
+    document.body.addEventListener("mousemove",(e)=>{
+        if([...e.target.classList].includes("colorSelectImage") || [...e.target.parentElement.classList].includes("colorSelectImage"))
+            {
+
+            }else{
+                const colorSelects =[...document.getElementsByClassName("colorSelectImage")]
+                colorSelects.forEach(element => {
+                    if (![...element.classList].includes("colorSelectImageSelectedTempOff")) {
+                        element.classList.remove("colorSelectImageSelected")
+                    }
+                });
+            }
+    })
+
+    function CheckCheckedGift(e){
+        if(e.target.checked){
+            AddOrRemoveToGift(product[0]._id,true)
+        }else{
+            AddOrRemoveToGift(product[0]._id,false)
+        }
     }
 
     return (
@@ -233,22 +319,24 @@ const Product = function (items){
                     <h1 className="closeExpandedImage" onClick={ExpandModeEngage}>&times;</h1>
                     <h1 className="expandExpandedImage" onClick={ExpandExpandedImage}><svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 242.133 242.133" xml:space="preserve" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g id="XMLID_25_"> <path id="XMLID_26_" d="M89.247,131.673l-47.732,47.73l-15.909-15.91c-4.29-4.291-10.742-5.572-16.347-3.252 C3.654,162.563,0,168.033,0,174.1v53.032c0,8.284,6.716,15,15,15l53.033,0.001c0.007-0.001,0.012-0.001,0.019,0 c8.285,0,15-6.716,15-15c0-4.377-1.875-8.316-4.865-11.059l-15.458-15.458l47.73-47.729c5.858-5.858,5.858-15.355,0-21.213 C104.603,125.815,95.104,125.816,89.247,131.673z"></path> <path id="XMLID_28_" d="M227.133,0H174.1c-6.067,0-11.536,3.655-13.858,9.26c-2.321,5.605-1.038,12.057,3.252,16.347l15.911,15.911 l-47.729,47.73c-5.858,5.858-5.858,15.355,0,21.213c2.929,2.929,6.768,4.393,10.606,4.393c3.839,0,7.678-1.464,10.606-4.394 l47.73-47.73l15.909,15.91c2.869,2.87,6.706,4.394,10.609,4.394c1.933,0,3.882-0.373,5.737-1.142 c5.605-2.322,9.26-7.792,9.26-13.858V15C242.133,6.716,235.417,0,227.133,0z"></path> </g> </g></svg></h1>
                     <div className="expandedImageDiv">
-                        <button className="buttonArrow arrowLeft" onClick={ButtonLeftClick}><svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="buttonArrowSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg></button>
-                        <div className="expandedImageBox"  onMouseMove={MouseMove}>
+                        {product[0].images!={}&&product[0].images!=undefined&&
+                        <button className="buttonArrow arrowLeft" onClick={ButtonLeftClick}><svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="buttonArrowSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg></button>}
+                        <div className="expandedImageBox" onMouseDown={ExpandMouseDown} onMouseUp={ExpandMouseUp}  onMouseMove={MouseMove} onMouseLeave={ExpandMouseUp}>
                             <div className="expandedImageImage myimagemain">
-                                <img src={product[0].image} alt="" classame="" width={600} height={600}/>
+                                <img src={product[0].image} alt="" classame="" width={600} height={600} draggable={false}/>
                             </div>
                             {product[0].images !=undefined &&   
                                 product[0].images.map((image,index) => (
                                     <>
                                         <div className={`expandedImageImage myimage${index}`}>
-                                            <img src={image} alt="" classame="" width={600} height={600}/>
+                                            <img src={image} alt="" classame="" width={600} height={600} draggable={false}/>
                                         </div>
                                     </>
                                 ))
                             }
                         </div>
-                        <button className="buttonArrow arrowRight" onClick={ButtonRightClick}><svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="buttonArrowSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg></button>
+                        {product[0].images!={}&&product[0].images!=undefined&&
+                        <button className="buttonArrow arrowRight" onClick={ButtonRightClick}><svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 330 330" xml:space="preserve" className="buttonArrowSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path id="XMLID_222_" d="M250.606,154.389l-150-149.996c-5.857-5.858-15.355-5.858-21.213,0.001 c-5.857,5.858-5.857,15.355,0.001,21.213l139.393,139.39L79.393,304.394c-5.857,5.858-5.857,15.355,0.001,21.213 C82.322,328.536,86.161,330,90,330s7.678-1.464,10.607-4.394l149.999-150.004c2.814-2.813,4.394-6.628,4.394-10.606 C255,161.018,253.42,157.202,250.606,154.389z"></path> </g></svg></button>}
                     </div>
                 </div>
                 <div className="productPage">
@@ -292,7 +380,7 @@ const Product = function (items){
                             <p className="productTag">Best Seller</p>
                         }
                         </div>
-                        <a href="/" className="productCategory">{product[0].category}</a>
+                        <a className="productCategory" onClick={()=>{RedirectToCategory(product[0].category)}}>{product[0].category}</a>
                         <h2 className="productTitle">{product[0].title}</h2>
                         <div className="starRating">
                             <h5>{rating}</h5>
@@ -320,9 +408,35 @@ const Product = function (items){
                             <h5 className="ratingCount">{product[0].rating.count} ratings</h5>
                             </div>
                         </div>
+                        {product[0].color != undefined && product[0].color.length > 1 && 
+                        <>
+                            <hr className="descDivider"/>
+                            <div className="colorSelect">
+                                <h3>colors : {selectedColor}</h3>
+                                <div className="colorSelectSelect">
+                                    {items.items.filter(item=> Object.values(items.options[0][product[0].colors]).includes(item._id)).map((item,key)=>(
+                                        <>
+                                        {item.color!=product[0].color?
+                                        <div className="colorSelectImage" onClick={()=>window.location.href=`http://${window.location.host}/products/${item._id}`} onMouseEnter={(e)=>MouseEnterColorStyle(e,item.color)} onFocus={MouseEnterColorStyle} onMouseLeave={MouseOutColorStyle} onBlur={MouseOutColorStyle}>
+                                            <img src={item.image} alt="" />
+                                        </div>
+                                        :
+                                        <>
+                                        <div className="colorSelectImage colorSelectImageSelected colorSelectImageSelectedTempOff" onClick={()=>window.location.href=`http://${window.location.host}/products/${item._id}`}>
+                                            <img src={item.image} alt="" />
+                                        </div>
+                                        </>
+                                        }
+                                            
+                                        </>
+                                    ))}
+                                </div>
+                            </div>
+                        </>}
                         <hr className="descDivider"/>
                         <h2 className="aboutitem">About this item</h2>
                         <p>{product[0].description}</p>
+                        
                     </div>
                     <div className="purchaseProduct">
                         {product[0].discount>0 ?<>
@@ -364,7 +478,7 @@ const Product = function (items){
                         {product[0].stock<=0?
                         <button className="addToCartButtonOutOfStock">Add To Cart</button>
                         :
-                        <button className="addToCartButton" onClick={()=>PostToCart(product[0]._id,product[0].title,quantity)}>Add To Cart</button>}
+                        <button className="addToCartButton" onClick={()=>PostToCart(product[0]._id,product[0].title,product[0].stock,quantity)}>Add To Cart</button>}
                         <hr className="productPriceHR"/>
                         <h4>How do you want your item?</h4>
                         <div className="deliveryOptions">
@@ -402,10 +516,14 @@ const Product = function (items){
                             </a>
                             }
                         </div>
+                        <div className="addAsGift">
+                            <input type="checkbox" name="giftCheckbox" id="" className="checkBoxGift" onClick={CheckCheckedGift}/>
+                            <label htmlFor="giftCheckbox" className="buyAsGiftLabel">buy as gift</label>
+                        </div>
                         <div className="addTo">
                             <hr className="productPriceHR"/>
                             <div className="addToBottom">
-                                <div className="forPageAdd addTocartButtonForPage" onClick={()=>PostToCart(product[0]._id,product[0].title)}>
+                                <div className="forPageAdd addTocartButtonForPage" onClick={()=>PostToCart(product[0]._id,product[0].title,product[0].stock)}>
                                     <svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 902.86 902.86" xml:space="preserve" className="cartSVG"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M671.504,577.829l110.485-432.609H902.86v-68H729.174L703.128,179.2L0,178.697l74.753,399.129h596.751V577.829z M685.766,247.188l-67.077,262.64H131.199L81.928,246.756L685.766,247.188z"></path> <path d="M578.418,825.641c59.961,0,108.743-48.783,108.743-108.744s-48.782-108.742-108.743-108.742H168.717 c-59.961,0-108.744,48.781-108.744,108.742s48.782,108.744,108.744,108.744c59.962,0,108.743-48.783,108.743-108.744 c0-14.4-2.821-28.152-7.927-40.742h208.069c-5.107,12.59-7.928,26.342-7.928,40.742 C469.675,776.858,518.457,825.641,578.418,825.641z M209.46,716.897c0,22.467-18.277,40.744-40.743,40.744 c-22.466,0-40.744-18.277-40.744-40.744c0-22.465,18.277-40.742,40.744-40.742C191.183,676.155,209.46,694.432,209.46,716.897z M619.162,716.897c0,22.467-18.277,40.744-40.743,40.744s-40.743-18.277-40.743-40.744c0-22.465,18.277-40.742,40.743-40.742 S619.162,694.432,619.162,716.897z"></path> </g> </g> </g></svg>
                                     <h5>Add One to Cart</h5>
                                 </div>

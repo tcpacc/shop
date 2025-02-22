@@ -32,6 +32,20 @@ app.get("/products", (req,res) =>{
         })
 })
 
+app.get("/options", (req,res) =>{
+    let options= []
+
+    db.collection("options")
+        .find()
+        .forEach(option=> options.push(option))
+        .then(()=>{
+            res.status(200).json(options)
+        })
+        .catch(()=>{
+            res.status(500).json({error:"Error..."})
+        })
+})
+
 app.get("/products/id/:id", (req,res) =>{
     if(ObjectId.isValid(req.params.id)){
 
@@ -73,6 +87,18 @@ app.post('/users',(req,res) =>{
         .catch(err=>{
             res.status(500).json({err: "could not create new document"})
         })
+})
+
+app.patch("/users/cart/:email", (req,res) =>{
+        const updates = req.body
+        db.collection('users')
+            .updateOne({email: req.params.email},{$set: updates})
+            .then(result =>{
+                res.status(200).json(result)
+            })
+            .catch(err=>{
+                res.status(500).json({err:'could not update document'})
+            })
 })
 
 app.get("/users/id/:id", (req,res) =>{

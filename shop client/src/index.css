@@ -30,9 +30,10 @@ body{
   z-index: 200;
   width: 100%;
   height: 100%;
-  position: absolute;
+  position: sticky;
   top: 0;
   justify-content: center;
+  overflow: hidden;
 }
 
 .expandedImageDiv{
@@ -41,6 +42,11 @@ body{
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.subTotalDiv{
+  align-self: flex-end;
+  padding-block: 10px;
 }
 
 .expandedImageImage{
@@ -106,6 +112,66 @@ footer > p{
 .footerContent > li{
   margin-right: 20px;
   line-height: 1.3rem;
+  cursor: pointer;
+}
+
+.emptyCart{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  position: relative;
+}
+
+.errorCart{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  position: relative;
+}
+
+.emptyCart > h2{
+  position: absolute;
+  top: 280px;
+}
+
+.browseProducts{
+  position: absolute;
+  top: 310px;
+  color: #007185;
+  cursor: pointer;
+  font-size: 0.83rem;
+}
+
+.reloadCartPageReload{
+  cursor: pointer;
+  color: #007185;
+}
+
+.reloadCartPageReload:hover{
+  text-decoration: underline;
+}
+
+.reloadCartPage{
+  font-size: .93rem;
+}
+
+.emptyCart > .browseProducts:hover{
+  text-decoration: underline;
+}
+
+.emptyCartSVG{
+  width: 300px;
+  height: 300px;
+}
+
+.errorCartIMG{
+  width: 200px;
+  height: 200px;
+  margin-bottom: 15px;
 }
 
 .clearAllSearchCategory{
@@ -151,7 +217,7 @@ hr{
 }
 
 .sorting{
-  margin-top: 30px;
+  margin-block: 20px;
 }
 
 .search{
@@ -173,7 +239,6 @@ hr{
 .searchBar:focus {
   /* outline:solid 1px black; */
   outline: none;
-  border-radius: 10px;
   border-color: green;
 }
 
@@ -205,8 +270,72 @@ hr{
   background-color: white;
 }
 
+.searchHistory{
+  display: none;
+  overflow-y: scroll;
+  z-index: 2;
+  top: 43px;
+  position: absolute;
+  width: 90%;
+  max-height: 50vh;
+  border-radius: 5px;
+  background-color: white;
+  overflow: hidden;
+}
+
+.searchHistory:active{
+  display: block;
+}
+
+.searchBar:focus + .searchHistory{
+  display: block;
+}
+
+.removeHistory{
+  color: black;
+  cursor: pointer;
+  align-self: center;
+}
+
+.searchDownHistory{
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 10px;
+  color: purple;
+}
+
+.historyTitle{
+  align-self: center;
+}
+
+.searhDownHistoryLeft{
+  flex: 1 1 auto;
+  padding-block: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.searchDownHistory:hover{
+  background-color: rgb(184, 181, 181);
+}
+
 .searchDownEl{
   padding: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.boldSearchDownEl{
+  font-weight: bold;
+}
+
+.searchDownEl >p{
+  align-self: center;
+}
+
+.searchDownElImg{
+  width: 25px;
+  height: 25px;
 }
 
 .searchDownEl:hover{
@@ -221,7 +350,7 @@ hr{
 .closeExpandedImage{
   position: absolute;
   cursor: pointer;
-  right: 0px;
+  right: 0;
   top: 0;
   font-size: 40px;
   padding-inline: 10px;
@@ -232,6 +361,7 @@ hr{
   position: absolute;
   cursor: pointer;
   padding-block: 5px;
+  top: 0px;
   right: 41px; 
   padding-inline:10px ;
 }
@@ -273,6 +403,7 @@ hr{
   padding-top: .5rem;
   padding-inline: 1.5rem;
   overflow: hidden;
+  min-height: 100vh;
   padding-bottom: 1.5rem;
   /* overflow-x: hidden; */
 }
@@ -297,10 +428,53 @@ hr{
   z-index: -1;
 }
 
+.greyedOutAddSubtractButton{
+  color: grey;
+  cursor: default;
+}
+
 .slick-prev:before, .slick-next:before { 
   color:black !important;
   position: absolute !important;
   /* bottom: 30px; */
+}
+
+.sortByDiv{
+  position: relative;
+}
+
+.sortByDropDown{
+  display: none;
+  position: absolute;
+  min-height: 100px;
+  min-width: 100%;
+  top: 0px;
+  right: 0;
+  z-index: 100;
+  flex-direction: column;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0px 0px 7px rgba(0,0,0,0.8);
+}
+
+.sortByDropDown:active{
+  display: flex;
+}
+
+.selectedSortBy{
+  border: 3px solid black;
+}
+
+.sortByDropDownButton{
+  border-radius: 10px;
+  font-weight: 400;
+  font-size: .9rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.sortByDropDownButton:hover{
+  background-color: rgb(234, 234, 234);
 }
 
 .grid-best-selling > .slick-prev:before,.grid-best-selling > .slick-next:before{
@@ -365,7 +539,7 @@ hr{
 .grid-best-selling{
   overflow: hidden;
   position: relative;
-  height:50vh;
+  max-height:350px;
 }
 
 .card-best-selling{
@@ -466,6 +640,23 @@ hr{
   border-radius: 10px;
   margin-left: 10px;
   /* border-left: 1px solid black; */
+}
+
+.signupButtonCart{
+  align-self: center;
+  color: black;
+  background-color: rgb(61, 166, 32);
+  text-decoration: none;
+  text-align: center;
+  width: 150px;
+  height: 40px;
+  padding-top: 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+}
+
+.signupButtonCart:hover{
+  background-color: rgb(102, 205, 50);
 }
 
 .signupButton:hover{
@@ -626,7 +817,44 @@ hr{
   width: 40px;
   height: 100%;
   margin-left: 20px;
+}
 
+.accountSettingsDropDown{
+  width: 150px;
+  position: absolute;
+  margin-top: 8px;
+  right: 5px;
+  min-height: 10px;
+  background-color: rgb(245, 245, 245);
+  border-radius: 4px;
+  display: none;
+}
+
+.accountSettingsDropDown::after{
+  content: "";
+  width: 0px;
+   height: 0px;
+   border-style: solid;
+   border-width: 0 20px 10px 20px;
+   border-color: transparent transparent rgb(245, 245, 245) transparent;
+   position: absolute;
+   top: -10px;
+   right: 50px;
+   transform: rotate(0deg);
+}
+
+.profile-image-div:hover > .accountSettingsDropDown{
+  display: block;
+}
+
+.accountSettingsOption{
+  cursor: pointer;
+  padding-left: 5px;
+  border-radius: 4px;
+}
+
+.accountSettingsOption:hover{
+  background-color: rgb(210, 210, 210);
 }
 
 .profile-image{
@@ -770,7 +998,218 @@ hr{
 
 .productCategory:hover{
   color: #007185;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cartPageEmpty{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cartPageEmpty > h1{
+  text-align: center;
+}
+
+.cartTitle{
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(83, 83, 83, 0.586);
+  padding-top: 20px;
+  padding-bottom:5px ;
+  padding-inline: 9px;
+}
+
+.cartTitle >  h1{
+  font-weight: 400;
+}
+
+.cartTitle h4{
+  align-self: flex-end;
+}
+
+.cartPageFilledLeft{
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cartPageFilledLeftCart {
+  background-color: white;
+  width: 70vw;
+  padding-inline: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartPageFilledLeftSavedForLater{
+  background-color: white;
+  width: 70vw;
+  padding-inline: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartPageFilledRight{
+  padding: 20px;
+  width: 300px;
+  max-height: 100px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.complpletePurchase{
+  background-color: rgb(61, 166, 32);
+  border: none;
+  padding-inline: 60px;
+  padding-block: 10px;
+  border-radius: 20px;
+}
+
+.complpletePurchaseGreyedOut{
+  border: none;
+  padding-inline: 60px;
+  padding-block: 10px;
+  border-radius: 20px;
+  background-color: rgb(112, 112, 112);
+}
+
+.searchCategoryTop{
+  height: 40px;
+  width: 100%;
+  padding-block: 10px;
+  padding-inline: 10px;
+  box-shadow: 0 0 7px rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: space-between;
+}
+
+.searchCategoryTop span{
+  color: #c45500;
+}
+
+.sortByButton{
+  border: none;
+  padding-block: 5px;
+  background-color: rgb(181, 181, 181);
+  padding-inline: 10px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.sortByButton:hover{
+  background-color:rgb(153, 153, 153) ;
+}
+
+.sortByButton:focus + .sortByDropDown{
+  display: flex;
+
+}
+
+.complpletePurchase:hover{
+  background-color: rgb(102, 205, 50);
+}
+
+.subTotalPurchase{
+  font-size: 1rem;
+}
+
+.cartContent{
+  width: 100%;
+}
+
+.cartItemContainer{
+  padding: 10px;
+  height: 210px;
+  display: flex;
+  align-items: center;
+}
+
+.contentOneCart{
+  background-color: #e7e7e7;
+  display: flex;
+  justify-content: space-around;
+}
+
+.itemManagement{
+  display: flex;
+  margin-top: 15px;
+}
+
+.borderLeftApplyaForItemManagement{
+  border-left: 1px solid rgba(128, 128, 128, 0.505);
+  padding-left: 10px;
+  margin-left: 10px;
+  height: 60%;
+  align-self: center;
+  display: flex;
+}
+
+.borderLeftApplyaForItemManagement > a{
+  color: #007185;
   text-decoration: none;
+  cursor: pointer;
+  font-size: .8rem;
+  align-self: center;
+}
+
+.borderLeftApplyaForItemManagement > a:hover{
+  color: #007185;
+  text-decoration: underline;
+}
+
+
+.cartImgContainer{
+  margin-right: 15px;
+}
+
+.cartItemTitle{
+  width: 500px;
+  text-align: start;
+  font-weight: 410;
+}
+
+.cartInfo{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: 85%;
+  gap: 4px;
+}
+
+.checkBoxDiv{
+  display: flex;
+}
+
+.addSubtractAmount{
+  display: flex;
+  gap: 15px;
+  border: 3px green solid;
+  border-radius: 10px;
+  padding-inline: 5px;
+}
+
+.addSubtractButton{
+  cursor: pointer;
+}
+
+.thrashcan{
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  align-self: center;
+}
+
+.checkBoxText{
+  font-size: .8rem;
+  align-self: center;
 }
 
 .productTags{
@@ -790,6 +1229,8 @@ hr{
 .descDivider{
   margin-top: 15px;
   margin-bottom: 15px;
+  border-color:rgba(0, 0, 0, 0.337) !important;
+  border-width: .5px;
 }
 
 .aboutitem{
@@ -831,9 +1272,18 @@ hr{
   height: 30px;
 }
 
+.expandedImageBox{
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .expandedImageImageExpanded{
-  /* padding-top: 385px; */
-  padding-bottom: 400px;
+  top: 0px;
+  position: absolute;
+  cursor: grab;
 }
 
 .img-zoom-lens {
@@ -940,6 +1390,12 @@ hr{
   gap: 20px;
 }
 
+.cartItemContainerContainer{
+  display: flex;
+  justify-content: space-between;
+  border-bottom: solid 1px rgba(83, 83, 83, 0.586);
+}
+
 .addTocartButtonForPage{
   padding-right: 20px;
   border-right: 1px solid black;
@@ -948,6 +1404,45 @@ hr{
 .forPageAdd{
   display: flex;
   gap: 10px;
+}
+
+.forPageAdd:hover{
+  text-decoration: underline;
+  cursor: pointer;
+  color: #007185;
+}
+
+.cartItemPriceDiscounted{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.discountFrom{
+  display: flex;
+  gap: 4px;
+}
+
+.discountedItemPercent{
+  background-color: rgba(153, 205, 50, 0.215);
+  color: rgba(22, 146, 2, 0.732);
+  padding: 3px;
+}
+
+.discountedItemPrice{
+  color: #008000;
+  align-self: flex-end;
+}
+
+.cartItemPriceDiscountedCrossedOut{
+  color: rgb(78, 78, 78);
+  text-decoration: line-through;
+}
+
+.cartItemPrice{
+  /* align-self: flex-start; */
+  margin-top: 10px;
+  font-size: .8rem;
 }
 
 .forPageAdd > h5{
@@ -1218,10 +1713,82 @@ hr{
   color: rgb(24, 165, 24);
 }
 
+.limitedStockText{
+  color: rgb(196, 163, 0);
+}
+
 .arrowSelectQuantity{
   width: 10px;
   height: 10px;
   transform: rotate(90deg);
+}
+
+.colorSelectSelect{
+  display: flex;
+  margin-left: 15px;
+  gap: 15px;
+  margin-top: 15px;
+  
+}
+
+.colorSelectImage{
+  border: 2px solid;
+  border-radius: 35px;
+  border-color: black;
+  padding: 10px;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.gridBanners{
+  height: 550px;
+  display: grid;
+  grid-template-areas: 
+  "a a a b b c c d d d" 
+  "a a a e e e e e e e" ;
+  gap: 5px;
+}
+
+.gridBanner1{
+  grid-area: a;
+  background-image: url("Screenshot 2025-02-21 210500.png");
+}
+.gridBanner2{
+  grid-area: b;
+  background-image: url("Screenshot 2025-02-21 212056.png");
+}
+.gridBanner3{
+  grid-area: c;
+  background-image: url("Screenshot 2025-02-21 212658.png")
+}
+.gridBanner4{
+  grid-area: d;
+  background-image: url("Screenshot 2025-02-21 212819.png");
+}
+.gridBanner5{
+  grid-area: e;
+  background-image: url("Screenshot 2025-02-21 211634.png");
+}
+
+.gridBanner{
+  border-radius: 10px;
+  background-size: cover;
+}
+
+.addAsGift{
+  position: absolute;
+  bottom: 65px;
+  display: flex;
+}
+
+.colorSelectImage > img{
+  width: 50px;
+  height: 45px;
+}
+
+.colorSelectImageSelected{
+  border-color: #189ad3;
+
 }
 
 @keyframes fadeUp {

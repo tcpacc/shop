@@ -73,7 +73,10 @@ export default function Signup(){
                     email: input.email,
                     password: input.password,
                     cart:{},
-                    list:[]
+                    list:[],
+                    savedforlater:{},
+                    history:[],
+                    gift:[]
                 })
                 su=true
                 accountinf = await axios.get(`http://localhost:4000/users/email/${input.email}`)

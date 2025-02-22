@@ -15,7 +15,7 @@ import Swal from 'sweetalert2'
 export let loggedIn;
 export let loggedInInfo;
 
-async function IsLoggedIn(){
+export async function IsLoggedIn(){
   if(getCookie("userEmail") != undefined){
     loggedIn=true
     loggedInInfo = await axios.get(`http://localhost:4000/users/email/${getCookie("userEmail")}`)
@@ -90,26 +90,42 @@ export async function PostToList(productId,productName){
   }
 }
 
-export async function PostToCart(productId,productName,quantity){
+export async function PostToCart(productId,productName,productStock,quantity){
+  let accountInfoUser;
+    if(su){
+      accountInfoUser = accountinf
+    }
+    else if(lgi){
+      accountInfoUser = infouser
+    }
+    else if(loggedIn){
+      accountInfoUser = loggedInInfo
+    }
   quantity = parseInt(quantity) ||1
   if(su==false&&lgi==false&&loggedIn==false){
       DisplayError()
+  }
+  else if(productStock<=0){
+    Swal.fire({
+      title:"Out of Stock",
+      text:"",
+      html:"<h4>Your item is not currently available.</h4><h4>Please check again later</h4>",
+      icon:"warning"
+    })
+  }
+  else if(productStock == accountInfoUser.data.cart[productId]){
+    Swal.fire({
+      title:"Warning!",
+      text:"Maximum amount in cart reached.",
+      icon:"warning",
+      footer:"<a href='/cart'>Go to Cart</a>"
+    })
   }
   else{
       Swal.fire( {icon: "success",
             title: "Added to Cart!", 
             test: `${productName} has been added to your cart`,
             footer:"<a href='/cart'>Go to Cart</a>"});
-      let accountInfoUser;
-      if(su){
-        accountInfoUser = accountinf
-      }
-      else if(lgi){
-        accountInfoUser = infouser
-      }
-      else if(loggedIn){
-        accountInfoUser = loggedInInfo
-      }
       const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
       if(productId in getuser.data.cart){
           let cartArr = getuser.data.cart
@@ -131,8 +147,162 @@ export async function PostToCart(productId,productName,quantity){
   }
 }
 
+export async function DecreaseItem(itemId){
+  let accountInfoUser;
+  if(su){
+    accountInfoUser = accountinf
+  }
+  else if(lgi){
+    accountInfoUser = infouser
+  }
+  else if(loggedIn){
+    accountInfoUser = loggedInInfo
+  }
+  accountInfoUser.data.cart[itemId]-=1
+  await axios.patch(`http://localhost:4000/users/cart/${accountInfoUser.data.email}`,{
+    cart:{...accountInfoUser.data.cart}
+  })
+}
+
+export async function IncreaseItem(itemId){
+  let accountInfoUser;
+  if(su){
+    accountInfoUser = accountinf
+  }
+  else if(lgi){
+    accountInfoUser = infouser
+  }
+  else if(loggedIn){
+    accountInfoUser = loggedInInfo
+  }
+  accountInfoUser.data.cart[itemId]+=1
+  await axios.patch(`http://localhost:4000/users/cart/${accountInfoUser.data.email}`,{
+    cart:{...accountInfoUser.data.cart}
+  })
+}
+
+export async function DeleteItem(itemId,deletedFrom){
+  let accountInfoUser;
+  if(su){
+    accountInfoUser = accountinf
+  }
+  else if(lgi){
+    accountInfoUser = infouser
+  }
+  else if(loggedIn){
+    accountInfoUser = loggedInInfo
+  }
+  delete accountInfoUser.data[deletedFrom][itemId]
+  axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+    [deletedFrom]:accountInfoUser.data[deletedFrom]
+})
+}
+
+export async function DeleteFromHistory(index){
+  let accountInfoUser;
+  if(su){
+    accountInfoUser = accountinf
+  }
+  else if(lgi){
+    accountInfoUser = infouser
+  }
+  else if(loggedIn){
+    accountInfoUser = loggedInInfo
+  }
+  const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
+  const newHistory = getuser.data["history"]
+  newHistory.splice(index,1)
+  axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+    history:newHistory
+  })
+}
+
 export function RedirectToCategory(categoryName){
-  window.location.href = `${window.location.href}search/*?categoryFilter=${categoryName[0].toUpperCase() + categoryName.slice(1).replace(" ","").replace("'","")}`
+  window.location.href = `${window.location.origin}/search/*?categoryFilter=${categoryName[0].toUpperCase() + categoryName.slice(1).replace(" ","").replace("'","")}`
+}
+
+export function AddToSaveForLaterOrCart(itemId,moveTo,moveFrom){
+  let accountInfoUser;
+  if(su){
+    accountInfoUser = accountinf
+  }
+  else if(lgi){
+    accountInfoUser = infouser
+  }
+  else if(loggedIn){
+    accountInfoUser = loggedInInfo
+  }
+
+  let newSaveForLater = accountInfoUser.data[moveTo]
+  newSaveForLater[itemId] = accountInfoUser.data[moveFrom][itemId]
+  axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+    [moveTo]:newSaveForLater
+  })
+}
+
+export async function AddOrRemoveToGift(productId,add) {
+  let accountInfoUser;
+      if(su){
+        accountInfoUser = accountinf
+      }
+      else if(lgi){
+        accountInfoUser = infouser
+      }
+      else if(loggedIn){
+        accountInfoUser = loggedInInfo
+      }
+    if(su==false&&lgi==false&&loggedIn==false){
+        return
+    }
+    const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
+    const newGift = getuser.data["gift"]
+    add?newGift.push(productId):newGift.splice(newGift.indexOf(productId),1)
+    axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+      gift:newGift
+    })
+}
+
+export async function SaveToHistory(searchInput){
+  let accountInfoUser;
+    if(su){
+      accountInfoUser = accountinf
+    }
+    else if(lgi){
+      accountInfoUser = infouser
+    }
+    else if(loggedIn){
+      accountInfoUser = loggedInInfo
+    }
+  if(su==false&&lgi==false&&loggedIn==false){
+      return
+  }
+  const getuser = await axios.get(`http://localhost:4000/users/id/${accountInfoUser.data._id}`)
+  const newHistory = getuser.data["history"]
+  newHistory.unshift(searchInput)
+  axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+    history:newHistory
+  })
+}
+
+export async function DeleteFromCart(){
+  let accountInfoUser;
+    if(su){
+      accountInfoUser = accountinf
+    }
+    else if(lgi){
+      accountInfoUser = infouser
+    }
+    else if(loggedIn){
+      accountInfoUser = loggedInInfo
+    }
+  if(su==false&&lgi==false&&loggedIn==false){
+      return
+  }
+  Swal.fire( {icon: "success",
+    title: "Purchase Complete!"});
+  axios.patch(`http://localhost:4000/users/addto/${accountInfoUser.data._id}`,{
+    cart:{}
+  })
 }
 
 function App() {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import {Outlet, Link, useNavigate} from "react-router-dom"
 import { su,accountinf } from "./signup"
 import {infouser, lgi} from "./login"
-import { getCookie, loggedIn, loggedInInfo } from "../src/App"
+import {DeleteFromHistory, getCookie, loggedIn, loggedInInfo, SaveToHistory } from "../src/App"
 import axios from "axios"
 import logoImg from '../public/images__4_-removebg-preview.png'
 
@@ -20,6 +20,12 @@ export default function Layout({items})
     const navigate= useNavigate()
     const [infoaccount,setInfoAcoount] = useState({});
     const [searchInput,setSearchInput] = useState('');
+    const [infoHistory,setInfoHistory] = useState([])
+    const [infoHistoryFilter,setInfoHistoryFilter] = useState()
+
+    document.querySelector(".colorFilter").classList.remove("colorFilterOn")
+    document.querySelector(".colorFilter").classList.add("colorFilterOff")
+    document.body.classList.remove("scrollable")
 
     useEffect(()=>{
         if(su){
@@ -36,6 +42,7 @@ export default function Layout({items})
                 setInfoAcoount(loggedInInfo.data)
             }, 10);
         }
+        setInfoHistory(infoaccount.history)
     })
     
     const [filteredItems,setFilteredItems]=useState([])
@@ -46,23 +53,42 @@ export default function Layout({items})
             setFilteredItems([])
             return
         }
-        setFilteredItems(items.filter(item => item.title.toUpperCase().includes(e.toUpperCase())))
+        setFilteredItems(items.filter(item => FilterCheck(item.title,e)))
+        setInfoHistoryFilter(infoHistory.filter(item => FilterCheck(item,e)))
     }
 
-    function GoToSearchPage(e){
+    function FilterCheck(item,searchTerm){
+        if(searchTerm.length> item.length){
+            return false
+        }
+        for (let index = 0; index < searchTerm.length; index++) {
+            if(item[index].toUpperCase()!= searchTerm[index].toUpperCase()){
+                return false
+            }
+        }
+        return true
+    }
+
+    function CheckPressedKey(e){
         if(e.key=="Enter"){
             if(searchInput!=""){
                 setFilteredItems([])
-                // navigate(`/search/${searchInput}`)
-                window.location.href = `/search/${searchInput}`
+                GoToSearchPage(searchInput)
             }
         }
+    }
+
+    function GoToSearchPage(search){
+        if(search.length > 2 && !infoHistory.includes(search)){
+            SaveToHistory(search)
+        }
+        window.location.href = `/search/${search}`
     }
 
     function SelectSearch(title){
         document.querySelector('.searchBar').value =title
         SearchFilter(title)
-        navigate(`/search/${title}`)
+        GoToSearchPage(title)
     }
 
     // useEffect(()=>{
@@ -73,6 +99,16 @@ export default function Layout({items})
     //         }
     //     },[]);
     // })
+
+    function LogOutAccount(inputEmail){
+        document.cookie = `userEmail=${inputEmail};expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
+        window.location.reload()
+    }
+
+    function DeleteItemHistory(key){
+        DeleteFromHistory(key)
+        window.location.reload()
+    }
     
     return (
         <>
@@ -81,15 +117,40 @@ export default function Layout({items})
                     <img src={logoImg} alt=""/>
                 </a>
                 <div className="search">
-                    <input type="text" placeholder="Search.." className="searchBar" onChange={(e)=>SearchFilter(e.target.value)} onKeyDown={(e)=>GoToSearchPage(e)} ></input>
+                    <input type="text" placeholder="Search.." className="searchBar" onChange={(e)=>SearchFilter(e.target.value)} onKeyDown={(e)=>CheckPressedKey(e)} ></input>
+                    {searchInput.length<=0&&
+                        <>
+                            <div className="searchHistory">
+                                {infoHistory!=undefined&&infoHistory.map((item,key)=>(
+                                    <div className="searchDownHistory" key={key}>
+                                    <div className="searhDownHistoryLeft" onClick={()=>SelectSearch(item)}>
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="searchDownElImg" ><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C9.61061 4 7.46589 5.04751 6 6.70835C5.91595 6.80358 5.83413 6.90082 5.75463 7M12 8V12L14.5 14.5M5.75391 4.00391V7.00391H8.75391" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                        <p className="historyTitle">{item}</p>
+                                    </div>
+                                        <p className="removeHistory" onClick={()=>DeleteItemHistory(key)}>&#x2716;</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    }
                     <div className="searchDown">
+                        {infoHistoryFilter!=undefined&&infoHistoryFilter.map((item,key)=>(
+                            <div className="searchDownHistory" key={key}>
+                                <div className="searhDownHistoryLeft" onClick={()=>SelectSearch(item)}>
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="searchDownElImg" ><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C9.61061 4 7.46589 5.04751 6 6.70835C5.91595 6.80358 5.83413 6.90082 5.75463 7M12 8V12L14.5 14.5M5.75391 4.00391V7.00391H8.75391" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                    <p className="historyTitle">{item.slice(0,searchInput.length)}<span className="boldSearchDownEl">{item.slice(searchInput.length)}</span></p>
+                                </div>
+                                <p className="removeHistory" onClick={()=>DeleteItemHistory(key)}>&#x2716;</p>
+                            </div>
+                        ))}
                         {filteredItems.map((item,key)=>(
                             <div className="searchDownEl" key={key} onClick={()=>SelectSearch(item.title)}>
-                                <p>{item.title}</p>
+                                <img className="searchDownElImg" src={item.image} alt="" />
+                                <p>{item.title.slice(0,searchInput.length)}<span className="boldSearchDownEl">{item.title.slice(searchInput.length)}</span></p>
                             </div>
                         ))}
                     </div>
-                    <button className="searchButton" onClick={()=>{window.location.href = `/search/${searchInput}`}}>
+                    <button className="searchButton" onClick={()=>GoToSearchPage(searchInput)}>
                         <svg height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-48.84 -48.84 586.08 586.08" xml:space="preserve" stroke="rgba(0,0,255)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M0,203.25c0,112.1,91.2,203.2,203.2,203.2c51.6,0,98.8-19.4,134.7-51.2l129.5,129.5c2.4,2.4,5.5,3.6,8.7,3.6 s6.3-1.2,8.7-3.6c4.8-4.8,4.8-12.5,0-17.3l-129.6-129.5c31.8-35.9,51.2-83,51.2-134.7c0-112.1-91.2-203.2-203.2-203.2 S0,91.15,0,203.25z M381.9,203.25c0,98.5-80.2,178.7-178.7,178.7s-178.7-80.2-178.7-178.7s80.2-178.7,178.7-178.7 S381.9,104.65,381.9,203.25z"></path> </g> </g> </g></svg>
                     </button>
                 </div>
@@ -100,6 +161,9 @@ export default function Layout({items})
                     {su||lgi||loggedIn ? <>
                     <div className="profile-image-div">
                         <img src={infoaccount.profilePicture==undefined? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiLp4JVcnUNcHcBofrZOiYcWZv4bAm-tF8DQ&s": infoaccount.profilePicture} alt="" className="profile-image"/>
+                        <div className="accountSettingsDropDown">
+                            <h3 className="accountSettingsOption" onClick={()=>LogOutAccount(infoaccount.email)}>Log out</h3>
+                        </div>
                     </div>
                     </> : <>
                         <Link to={'/signup'} className="signupButton">signup</Link>
@@ -134,7 +198,7 @@ export default function Layout({items})
                     <li>Business</li>
                     <li>Delete Account</li>
                 </ul>
-                <p>© 2025 Walmart. All Rights Reserved.</p>
+                <p>© 2025 Shop. All Rights Reserved.</p>
             </footer>
         </>
     )
