@@ -48,12 +48,14 @@ export default function Cart({items}){
 
     //gift item checks
     useEffect(()=>{
-        if(cartItems!=undefined){
-            cartItems.forEach(element => {
-                if(userInfo.data.gift.includes(element._id)){
-                    document.querySelector(`.checkBoxGift${element._id}`).checked=true
-                }
-            });
+        if(cartItems != "no account found"){
+            if(cartItems!=undefined){
+                cartItems.forEach(element => {
+                    if(userInfo.data.gift.includes(element._id)){
+                        document.querySelector(`.checkBoxGift${element._id}`).checked=true
+                    }
+                });
+            }
         }
     },[cartItems])
 
